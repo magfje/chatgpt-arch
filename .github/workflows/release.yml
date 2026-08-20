@@ -1,0 +1,143 @@
+name: release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */3 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install verification tools
+        run: sudo apt-get update && sudo apt-get install -y gnupg libarchive-tools shellcheck
+
+      - name: Read signed OpenAI package metadata
+        run: ./scripts/update-package.sh
+
+      - name: Generate .SRCINFO
+        run: |
+          docker run --rm \
+            --volume "$PWD:/source:ro" \
+            archlinux:base-devel \
+            bash -lc 'useradd --create-home builder && install -d -o builder /tmp/package && cp /source/PKGBUILD /tmp/package/ && chown builder /tmp/package/PKGBUILD && su builder -c "cd /tmp/package && makepkg --printsrcinfo"' \
+            > .SRCINFO
+
+      - name: Validate metadata
+        run: |
+          shellcheck scripts/*.sh tests/*.sh
+          ./tests/test-package.sh
+
+      - name: Commit metadata update
+        run: |
+          if git diff --quiet -- PKGBUILD .SRCINFO; then
+            exit 0
+          fi
+          version=$(sed -n 's/^pkgver=//p' PKGBUILD)
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add PKGBUILD .SRCINFO
+          git commit -m "chore: update ChatGPT to ${version}"
+          git push origin HEAD:main
+
+      - name: Read release version
+        id: version
+        run: |
+          version=$(sed -n 's/^pkgver=//p' PKGBUILD)
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v${version}" >/dev/null 2>&1; then
+            printf 'exists=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'exists=false\n' >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Build x86_64 package
+        if: steps.version.outputs.exists != 'true'
+        run: ./scripts/build-in-docker.sh
+
+      - name: Locate package
+        if: steps.version.outputs.exists != 'true'
+        id: package
+        run: |
+          package_file=$(find "$PWD" -maxdepth 1 -type f -name 'chatgpt-native-bin-*.pkg.tar.zst' -print -quit)
+          test -n "$package_file"
+          printf 'path=%s\n' "$package_file" >> "$GITHUB_OUTPUT"
+          printf 'name=%s\n' "$(basename "$package_file")" >> "$GITHUB_OUTPUT"
+          sha256sum "$package_file" > "${package_file}.sha256"
+
+      - name: Smoke packaged executables
+        if: steps.version.outputs.exists != 'true'
+        run: |
+          package_root=$(mktemp -d)
+          bsdtar -xf "${{ steps.package.outputs.path }}" -C "$package_root"
+          "$package_root/usr/lib/chatgpt/ChatGPT" --version
+          "$package_root/usr/lib/chatgpt/resources/codex" --version
+          "$package_root/usr/lib/chatgpt/resources/codex" \
+            app-server generate-json-schema \
+            --experimental \
+            --out "$package_root/schema"
+          test -f "$package_root/schema/ClientRequest.json"
+
+      - name: Publish versioned release
+        if: steps.version.outputs.exists != 'true'
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            "${{ steps.package.outputs.path }}" \
+            "${{ steps.package.outputs.path }}.sha256" \
+            PKGBUILD \
+            .SRCINFO \
+            --title "ChatGPT ${{ steps.version.outputs.version }} for Arch Linux" \
+            --notes "Unofficial Arch package of OpenAI's official Linux release."
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Build pacman repository database
+        if: steps.version.outputs.exists != 'true'
+        run: |
+          mkdir -p dist/repo
+          cp "${{ steps.package.outputs.path }}" dist/repo/
+          cp chatgpt-arch.conf dist/repo/
+          docker run --rm \
+            --volume "$PWD/dist/repo:/repo" \
+            --workdir /repo \
+            archlinux:base \
+            bash -lc 'repo-add chatgpt-arch.db.tar.gz chatgpt-native-bin-*.pkg.tar.zst && cp --dereference chatgpt-arch.db chatgpt-arch.db.upload && cp --dereference chatgpt-arch.files chatgpt-arch.files.upload'
+          mv dist/repo/chatgpt-arch.db.upload dist/repo/chatgpt-arch.db
+          mv dist/repo/chatgpt-arch.files.upload dist/repo/chatgpt-arch.files
+
+      - name: Publish pacman repository
+        if: steps.version.outputs.exists != 'true'
+        run: |
+          if ! gh release view pacman-repo >/dev/null 2>&1; then
+            gh release create pacman-repo \
+              --title "Personal pacman repository" \
+              --notes "Unsigned personal repository for chatgpt-native-bin."
+          fi
+
+          release_id=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/pacman-repo" --jq '.id')
+          gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets" --paginate --jq '.[].id' |
+            while read -r asset_id; do
+              gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}"
+            done
+
+          gh release upload pacman-repo \
+            dist/repo/chatgpt-arch.conf \
+            dist/repo/chatgpt-arch.db \
+            dist/repo/chatgpt-arch.files \
+            "dist/repo/${{ steps.package.outputs.name }}" \
+            --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
