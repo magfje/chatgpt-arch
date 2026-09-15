@@ -57,6 +57,10 @@ Codex Linux Repository key, verifies each `Packages.gz` digest from that signed
 metadata, and copies the published version, paths, and SHA-256 values into the
 `PKGBUILD`.
 
+OpenAI can briefly publish different versions for amd64 and arm64 during a
+staged rollout. In that state the updater leaves the current package untouched
+and lets the next scheduled run retry after both architectures converge.
+
 Pinned repository-key fingerprint:
 
 ```text
@@ -74,4 +78,3 @@ Pinned repository-key fingerprint:
 
 - [Official Linux documentation](https://learn.chatgpt.com/docs/linux/linux-app)
 - [OpenAI Linux apt repository](https://persistent.oaistatic.com/codex-app-prod/linux/deb)
-

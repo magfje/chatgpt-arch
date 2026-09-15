@@ -100,11 +100,14 @@ arm64_packages=$(fetch_packages arm64)
 version_amd64=$(package_field "$amd64_packages" amd64 Version)
 version_arm64=$(package_field "$arm64_packages" arm64 Version)
 
-if [[ -z "$version_amd64" || "$version_amd64" != "$version_arm64" ]]; then
-  printf 'OpenAI architecture versions differ: amd64=%s arm64=%s\n' \
-    "$version_amd64" "$version_arm64" >&2
-  exit 1
-fi
+version_status=0
+"$project_root/scripts/check-architecture-versions.sh" \
+  "$version_amd64" "$version_arm64" || version_status=$?
+case "$version_status" in
+  0) ;;
+  75) exit 0 ;;
+  *) exit "$version_status" ;;
+esac
 
 path_amd64=$(package_field "$amd64_packages" amd64 Filename)
 path_arm64=$(package_field "$arm64_packages" arm64 Filename)
