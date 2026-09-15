@@ -22,6 +22,7 @@ jobs:
       - name: Verify current OpenAI metadata
         run: ./scripts/update-package.sh --check
 
-      - name: Test package metadata
-        run: ./tests/test-package.sh
-
+      - name: Test updater and package metadata
+        run: |
+          ./tests/test-package.sh
+          ./tests/test-update-policy.sh
