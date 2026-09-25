@@ -1,5 +1,5 @@
 pkgname=chatgpt-native-bin
-pkgver=26.917.71314
+pkgver=26.924.20706
 pkgrel=1
 pkgdesc="Official OpenAI ChatGPT desktop app, repackaged for Arch Linux"
 arch=('x86_64' 'aarch64')
@@ -48,13 +48,13 @@ conflicts=('chatgpt')
 options=('!debug' '!strip')
 
 _repo_base='https://persistent.oaistatic.com/codex-app-prod/linux/deb'
-_deb_path_x86_64='pool/main/c/chatgpt/chatgpt_26.917.71314_amd64.deb'
-_deb_path_aarch64='pool/main/c/chatgpt/chatgpt_26.917.71314_arm64.deb'
+_deb_path_x86_64='pool/main/c/chatgpt/chatgpt_26.924.20706_amd64.deb'
+_deb_path_aarch64='pool/main/c/chatgpt/chatgpt_26.924.20706_arm64.deb'
 
 source_x86_64=("chatgpt_${pkgver}_amd64.deb::${_repo_base}/${_deb_path_x86_64}")
 source_aarch64=("chatgpt_${pkgver}_arm64.deb::${_repo_base}/${_deb_path_aarch64}")
-sha256sums_x86_64=('851ec28b65bde2ff1da9f37dcdf5b6e20a915c7568f8b2ce993c00428f018ae5')
-sha256sums_aarch64=('2114883623dae34a4bc7a67faad3e6652dd9bfdc7a28f57c36ed03e350be1cf1')
+sha256sums_x86_64=('760a0a98dcc05a40cbd8a36fec1dd7b32733e6a1f2a5285386ae7faf9a6ab033')
+sha256sums_aarch64=('0620e188af57bc33cd3cc016c7ec3fcf6ed087c1a90283d057598c9428975648')
 
 prepare() {
   local deb_arch
