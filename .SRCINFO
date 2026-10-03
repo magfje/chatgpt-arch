@@ -1,6 +1,6 @@
 pkgbase = chatgpt-native-bin
 	pkgdesc = Official OpenAI ChatGPT desktop app, repackaged for Arch Linux
-	pkgver = 26.930.21537
+	pkgver = 26.930.31730
 	pkgrel = 1
 	url = https://learn.chatgpt.com/docs/linux/linux-app
 	arch = x86_64
@@ -40,13 +40,13 @@ pkgbase = chatgpt-native-bin
 	optdepends = git: repository integration
 	optdepends = trash-cli: desktop trash integration
 	optdepends = vulkan-driver: hardware Vulkan implementation
-	provides = chatgpt=26.930.21537
+	provides = chatgpt=26.930.31730
 	conflicts = chatgpt
 	options = !debug
 	options = !strip
-	source_x86_64 = chatgpt_26.930.21537_amd64.deb::https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_26.930.21537_amd64.deb
-	sha256sums_x86_64 = 60fdb6d895d776f8831ff35a783de04cdbfa280f0f3d972584315f98e57aa256
-	source_aarch64 = chatgpt_26.930.21537_arm64.deb::https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_26.930.21537_arm64.deb
-	sha256sums_aarch64 = f646c01eebd37a49317ef62aede877c229daeee4f1cab9ef3eb61a1cf6429564
+	source_x86_64 = chatgpt_26.930.31730_amd64.deb::https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_26.930.31730_amd64.deb
+	sha256sums_x86_64 = e0174d8d0a5f4141145458c814f3c2d863dd67e942b868785a1f5dac9cba3e16
+	source_aarch64 = chatgpt_26.930.31730_arm64.deb::https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_26.930.31730_arm64.deb
+	sha256sums_aarch64 = dd980085e9746fad8bd45b48354885d2ea3a9ad09889e0f0d6232f1d819b26b2
 
 pkgname = chatgpt-native-bin
